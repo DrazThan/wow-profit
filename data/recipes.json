@@ -1,0 +1,395 @@
+[
+  {
+    "outputItemId": 21840,
+    "outputQty": 1,
+    "profession": "Tailoring",
+    "skillRequired": 300,
+    "source": "trainer",
+    "mats": [
+      {"itemId": 14047, "qty": 5}
+    ]
+  },
+  {
+    "outputItemId": 21877,
+    "outputQty": 1,
+    "profession": "Tailoring",
+    "skillRequired": 350,
+    "source": "trainer",
+    "mats": [
+      {"itemId": 21840, "qty": 2},
+      {"itemId": 22449, "qty": 1}
+    ]
+  },
+  {
+    "outputItemId": 21886,
+    "outputQty": 1,
+    "profession": "Tailoring",
+    "skillRequired": 350,
+    "source": "trainer",
+    "mats": [
+      {"itemId": 14047, "qty": 10},
+      {"itemId": 23570, "qty": 1}
+    ]
+  },
+  {
+    "outputItemId": 21878,
+    "outputQty": 1,
+    "profession": "Tailoring",
+    "skillRequired": 365,
+    "source": "trainer",
+    "mats": [
+      {"itemId": 21886, "qty": 2},
+      {"itemId": 23575, "qty": 1}
+    ]
+  },
+  {
+    "outputItemId": 21880,
+    "outputQty": 1,
+    "profession": "Tailoring",
+    "skillRequired": 365,
+    "source": "trainer",
+    "mats": [
+      {"itemId": 21886, "qty": 2},
+      {"itemId": 23570, "qty": 1}
+    ]
+  },
+  {
+    "outputItemId": 21881,
+    "outputQty": 1,
+    "profession": "Tailoring",
+    "skillRequired": 365,
+    "source": "trainer",
+    "mats": [
+      {"itemId": 21886, "qty": 2},
+      {"itemId": 23576, "qty": 1}
+    ]
+  },
+  {
+    "outputItemId": 22824,
+    "outputQty": 2,
+    "profession": "Alchemy",
+    "skillRequired": 345,
+    "source": "trainer",
+    "mats": [
+      {"itemId": 22786, "qty": 3},
+      {"itemId": 22449, "qty": 1},
+      {"itemId": 22337, "qty": 1}
+    ]
+  },
+  {
+    "outputItemId": 22828,
+    "outputQty": 2,
+    "profession": "Alchemy",
+    "skillRequired": 340,
+    "source": "trainer",
+    "mats": [
+      {"itemId": 22793, "qty": 3},
+      {"itemId": 22449, "qty": 1},
+      {"itemId": 22337, "qty": 1}
+    ]
+  },
+  {
+    "outputItemId": 22826,
+    "outputQty": 2,
+    "profession": "Alchemy",
+    "skillRequired": 360,
+    "source": "trainer",
+    "mats": [
+      {"itemId": 22790, "qty": 3},
+      {"itemId": 22337, "qty": 1}
+    ]
+  },
+  {
+    "outputItemId": 22820,
+    "outputQty": 2,
+    "profession": "Alchemy",
+    "skillRequired": 355,
+    "source": "trainer",
+    "mats": [
+      {"itemId": 22792, "qty": 2},
+      {"itemId": 22572, "qty": 2},
+      {"itemId": 22337, "qty": 1}
+    ]
+  },
+  {
+    "outputItemId": 22823,
+    "outputQty": 2,
+    "profession": "Alchemy",
+    "skillRequired": 360,
+    "source": "drop",
+    "mats": [
+      {"itemId": 22791, "qty": 2},
+      {"itemId": 22787, "qty": 2},
+      {"itemId": 22337, "qty": 1}
+    ]
+  },
+  {
+    "outputItemId": 22683,
+    "outputQty": 1,
+    "profession": "Alchemy",
+    "skillRequired": 375,
+    "source": "trainer",
+    "mats": [
+      {"itemId": 22792, "qty": 7},
+      {"itemId": 23572, "qty": 1},
+      {"itemId": 32428, "qty": 1},
+      {"itemId": 22337, "qty": 1}
+    ]
+  },
+  {
+    "outputItemId": 22861,
+    "outputQty": 1,
+    "profession": "Alchemy",
+    "skillRequired": 375,
+    "source": "trainer",
+    "mats": [
+      {"itemId": 22791, "qty": 7},
+      {"itemId": 23576, "qty": 1},
+      {"itemId": 32428, "qty": 1},
+      {"itemId": 22337, "qty": 1}
+    ]
+  },
+  {
+    "outputItemId": 22853,
+    "outputQty": 1,
+    "profession": "Alchemy",
+    "skillRequired": 375,
+    "source": "drop",
+    "mats": [
+      {"itemId": 22793, "qty": 7},
+      {"itemId": 23571, "qty": 1},
+      {"itemId": 32428, "qty": 1},
+      {"itemId": 22337, "qty": 1}
+    ]
+  },
+  {
+    "outputItemId": 22854,
+    "outputQty": 1,
+    "profession": "Alchemy",
+    "skillRequired": 375,
+    "source": "drop",
+    "mats": [
+      {"itemId": 22787, "qty": 7},
+      {"itemId": 23570, "qty": 1},
+      {"itemId": 32428, "qty": 1},
+      {"itemId": 22337, "qty": 1}
+    ]
+  },
+  {
+    "outputItemId": 22851,
+    "outputQty": 1,
+    "profession": "Alchemy",
+    "skillRequired": 375,
+    "source": "drop",
+    "mats": [
+      {"itemId": 22785, "qty": 7},
+      {"itemId": 23574, "qty": 1},
+      {"itemId": 32428, "qty": 1},
+      {"itemId": 22337, "qty": 1}
+    ]
+  },
+  {
+    "outputItemId": 22832,
+    "outputQty": 2,
+    "profession": "Alchemy",
+    "skillRequired": 350,
+    "source": "trainer",
+    "mats": [
+      {"itemId": 22785, "qty": 3},
+      {"itemId": 22451, "qty": 1},
+      {"itemId": 22337, "qty": 1}
+    ]
+  },
+  {
+    "outputItemId": 22734,
+    "outputQty": 2,
+    "profession": "Alchemy",
+    "skillRequired": 340,
+    "source": "trainer",
+    "mats": [
+      {"itemId": 22786, "qty": 2},
+      {"itemId": 22789, "qty": 1},
+      {"itemId": 22337, "qty": 1}
+    ]
+  },
+  {
+    "outputItemId": 28104,
+    "outputQty": 2,
+    "profession": "Alchemy",
+    "skillRequired": 360,
+    "source": "trainer",
+    "mats": [
+      {"itemId": 22785, "qty": 2},
+      {"itemId": 22452, "qty": 2},
+      {"itemId": 22337, "qty": 1}
+    ]
+  },
+  {
+    "outputItemId": 28103,
+    "outputQty": 2,
+    "profession": "Alchemy",
+    "skillRequired": 360,
+    "source": "trainer",
+    "mats": [
+      {"itemId": 22786, "qty": 2},
+      {"itemId": 22451, "qty": 2},
+      {"itemId": 22337, "qty": 1}
+    ]
+  },
+  {
+    "outputItemId": 22827,
+    "outputQty": 2,
+    "profession": "Alchemy",
+    "skillRequired": 350,
+    "source": "trainer",
+    "mats": [
+      {"itemId": 22787, "qty": 3},
+      {"itemId": 22454, "qty": 1},
+      {"itemId": 22337, "qty": 1}
+    ]
+  },
+  {
+    "outputItemId": 23572,
+    "outputQty": 1,
+    "profession": "Alchemy",
+    "skillRequired": 300,
+    "source": "trainer",
+    "mats": [
+      {"itemId": 22452, "qty": 10}
+    ]
+  },
+  {
+    "outputItemId": 23571,
+    "outputQty": 1,
+    "profession": "Alchemy",
+    "skillRequired": 300,
+    "source": "trainer",
+    "mats": [
+      {"itemId": 22451, "qty": 10}
+    ]
+  },
+  {
+    "outputItemId": 23570,
+    "outputQty": 1,
+    "profession": "Alchemy",
+    "skillRequired": 300,
+    "source": "trainer",
+    "mats": [
+      {"itemId": 22457, "qty": 10}
+    ]
+  },
+  {
+    "outputItemId": 23573,
+    "outputQty": 1,
+    "profession": "Alchemy",
+    "skillRequired": 300,
+    "source": "trainer",
+    "mats": [
+      {"itemId": 22460, "qty": 10}
+    ]
+  },
+  {
+    "outputItemId": 23574,
+    "outputQty": 1,
+    "profession": "Alchemy",
+    "skillRequired": 300,
+    "source": "trainer",
+    "mats": [
+      {"itemId": 22454, "qty": 10}
+    ]
+  },
+  {
+    "outputItemId": 23576,
+    "outputQty": 1,
+    "profession": "Alchemy",
+    "skillRequired": 300,
+    "source": "trainer",
+    "mats": [
+      {"itemId": 22456, "qty": 10}
+    ]
+  },
+  {
+    "outputItemId": 23575,
+    "outputQty": 1,
+    "profession": "Alchemy",
+    "skillRequired": 300,
+    "source": "trainer",
+    "mats": [
+      {"itemId": 22459, "qty": 10}
+    ]
+  },
+  {
+    "outputItemId": 23436,
+    "outputQty": 2,
+    "profession": "Blacksmithing",
+    "skillRequired": 300,
+    "source": "trainer",
+    "mats": [
+      {"itemId": 23424, "qty": 2}
+    ]
+  },
+  {
+    "outputItemId": 23425,
+    "outputQty": 1,
+    "profession": "Blacksmithing",
+    "skillRequired": 325,
+    "source": "trainer",
+    "mats": [
+      {"itemId": 23423, "qty": 2}
+    ]
+  },
+  {
+    "outputItemId": 23526,
+    "outputQty": 1,
+    "profession": "Blacksmithing",
+    "skillRequired": 350,
+    "source": "trainer",
+    "mats": [
+      {"itemId": 23425, "qty": 4}
+    ]
+  },
+  {
+    "outputItemId": 12359,
+    "outputQty": 1,
+    "profession": "Alchemy",
+    "skillRequired": 275,
+    "source": "trainer",
+    "mats": [
+      {"itemId": 12800, "qty": 1},
+      {"itemId": 3860, "qty": 1}
+    ]
+  },
+  {
+    "outputItemId": 23507,
+    "outputQty": 1,
+    "profession": "Blacksmithing",
+    "skillRequired": 350,
+    "source": "trainer",
+    "mats": [
+      {"itemId": 23425, "qty": 10},
+      {"itemId": 23427, "qty": 2}
+    ]
+  },
+  {
+    "outputItemId": 23508,
+    "outputQty": 1,
+    "profession": "Blacksmithing",
+    "skillRequired": 360,
+    "source": "trainer",
+    "mats": [
+      {"itemId": 23425, "qty": 8},
+      {"itemId": 23426, "qty": 2}
+    ]
+  },
+  {
+    "outputItemId": 23077,
+    "outputQty": 1,
+    "profession": "Blacksmithing",
+    "skillRequired": 350,
+    "source": "trainer",
+    "mats": [
+      {"itemId": 23425, "qty": 4},
+      {"itemId": 23572, "qty": 1}
+    ]
+  }
+]

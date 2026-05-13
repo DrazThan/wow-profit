@@ -1,0 +1,69 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-wow-brown text-wow-parchment;
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3 {
+    font-family: 'Cinzel', serif;
+  }
+}
+
+@layer components {
+  .panel {
+    @apply bg-wow-brown-light border border-wow-border rounded-lg p-4;
+  }
+
+  .panel-header {
+    @apply font-cinzel text-wow-gold text-lg font-semibold mb-3 pb-2 border-b border-wow-border;
+  }
+
+  .btn {
+    @apply px-3 py-1.5 rounded text-sm font-medium transition-colors duration-150 cursor-pointer;
+  }
+
+  .btn-gold {
+    @apply btn bg-wow-gold text-wow-brown hover:bg-wow-gold-light;
+  }
+
+  .btn-outline {
+    @apply btn border border-wow-border text-wow-parchment hover:border-wow-gold hover:text-wow-gold;
+  }
+
+  .btn-ghost {
+    @apply btn text-wow-gray hover:text-wow-parchment;
+  }
+
+  .input {
+    @apply bg-wow-brown border border-wow-border rounded px-3 py-1.5 text-sm text-wow-parchment placeholder-wow-gray focus:outline-none focus:border-wow-gold w-full;
+  }
+
+  .table-row-hover {
+    @apply hover:bg-wow-border/30 transition-colors duration-100;
+  }
+
+  .quality-1 { @apply text-wow-common; }
+  .quality-2 { @apply text-wow-green; }
+  .quality-3 { @apply text-wow-blue; }
+  .quality-4 { @apply text-wow-purple; }
+  .quality-5 { @apply text-wow-orange; }
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #2a1a0a;
+}
+::-webkit-scrollbar-thumb {
+  background: #5a3e1b;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #ffd100;
+}
