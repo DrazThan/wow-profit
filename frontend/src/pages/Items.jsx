@@ -21,24 +21,6 @@ function FilterBar({ filters, onChange }) {
         />
       </div>
       <div>
-        <label className="text-xs text-wow-gray block mb-1">Min Sale Rate %</label>
-        <input
-          type="number" min="0" max="100" step="5"
-          value={Math.round(filters.min_sale_rate * 100)}
-          onChange={e => onChange({ ...filters, min_sale_rate: Number(e.target.value) / 100 })}
-          className="input w-20"
-        />
-      </div>
-      <div>
-        <label className="text-xs text-wow-gray block mb-1">Min Daily Volume</label>
-        <input
-          type="number" min="0" step="1"
-          value={filters.min_daily_sold}
-          onChange={e => onChange({ ...filters, min_daily_sold: Number(e.target.value) })}
-          className="input w-20"
-        />
-      </div>
-      <div>
         <label className="text-xs text-wow-gray block mb-1">Sort By</label>
         <select
           value={filters.sort_by}
@@ -47,10 +29,11 @@ function FilterBar({ filters, onChange }) {
         >
           <option value="flip_profit">Flip Profit</option>
           <option value="flip_margin">Margin %</option>
-          <option value="region_sale_rate">Sale Rate</option>
-          <option value="region_avg_daily_sold">Daily Volume</option>
         </select>
       </div>
+      <p className="text-xs text-wow-gray self-end pb-1">
+        Sale rate &amp; daily vol. available on item detail (region endpoint)
+      </p>
     </div>
   )
 }
@@ -79,8 +62,8 @@ function ItemDetailPanel({ item, realm, faction, onClose }) {
         <div><p className="text-wow-gray text-xs">Market Value</p><GoldDisplay copper={item.market_value} /></div>
         <div><p className="text-wow-gray text-xs">Flip Profit (after 5% cut)</p><GoldDisplay copper={item.flip_profit} className="text-wow-green" /></div>
         <div><p className="text-wow-gray text-xs">Margin</p><span className="text-wow-green">{(item.flip_margin * 100).toFixed(1)}%</span></div>
-        <div><p className="text-wow-gray text-xs">Sale Rate</p><span>{(item.region_sale_rate * 100).toFixed(0)}%</span></div>
-        <div><p className="text-wow-gray text-xs">Daily Sold</p><span>{item.region_avg_daily_sold?.toFixed(1)}</span></div>
+        <div><p className="text-wow-gray text-xs">Sale Rate</p><span>{item.sale_pct > 0 ? `${item.sale_pct}%` : '—'}</span></div>
+        <div><p className="text-wow-gray text-xs">Daily Sold</p><span>{item.sold_per_day > 0 ? item.sold_per_day.toFixed(1) : '—'}</span></div>
         <div><p className="text-wow-gray text-xs">Auctions</p><span>{item.num_auctions}</span></div>
         {item.vendor_sell > 0 && <div><p className="text-wow-gray text-xs">Vendor Sell</p><GoldDisplay copper={item.vendor_sell} /></div>}
       </div>
@@ -103,7 +86,7 @@ function ItemDetailPanel({ item, realm, faction, onClose }) {
   )
 }
 
-const DEFAULT_FILTERS = { min_margin: 0, min_sale_rate: 0.1, min_daily_sold: 0, sort_by: 'flip_profit', limit: 100 }
+const DEFAULT_FILTERS = { min_margin: 0, sort_by: 'flip_profit', limit: 100 }
 
 export default function Items() {
   const { realm, faction, regionId } = useRealm()

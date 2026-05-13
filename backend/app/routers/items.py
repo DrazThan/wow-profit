@@ -7,11 +7,19 @@ from app.utils.gold import flip_margin, flip_profit
 router = APIRouter(prefix="/api/items", tags=["items"])
 
 
-async def _enrich_item(raw: dict, realm: str, faction: str) -> AHItemPrice:
+async def _enrich_item(raw: dict, region_data: dict | None = None, meta: dict | None = None) -> AHItemPrice:
+    """
+    raw: AH-level data from /ah/{id} bulk. Actual TSM field names:
+         itemId, minBuyout, marketValue, historical, numAuctions, quantity
+    region_data: optional region-level data from /region/{id}/item/{id}. Actual TSM field names:
+         avgSalePrice, salePct (0-100), soldPerDay, historical
+    """
     item_id = raw.get("itemId", 0)
-    meta = await item_db_service.get_item(item_id) or {}
+    if meta is None:
+        meta = await item_db_service.get_item(item_id) or {}
     mb = raw.get("minBuyout", 0)
     mv = raw.get("marketValue", 0)
+    rd = region_data or {}
     return AHItemPrice(
         item_id=item_id,
         name=meta.get("name", f"Item #{item_id}"),
@@ -19,14 +27,12 @@ async def _enrich_item(raw: dict, realm: str, faction: str) -> AHItemPrice:
         quality=meta.get("quality", 1),
         min_buyout=mb,
         market_value=mv,
-        historical_value=raw.get("historicalValue", 0),
+        historical=raw.get("historical", 0),
         num_auctions=raw.get("numAuctions", 0),
         quantity=raw.get("quantity", 0),
-        region_min_buyout_avg=raw.get("regionMinBuyoutAvg", 0),
-        region_market_value_avg=raw.get("regionMarketValueAvg", 0),
-        region_sale_avg=raw.get("regionSaleAvg", 0),
-        region_sale_rate=raw.get("regionSaleRate", 0.0),
-        region_avg_daily_sold=raw.get("regionAvgDailySold", 0.0),
+        avg_sale_price=rd.get("avgSalePrice", 0),
+        sale_pct=rd.get("salePct", 0),
+        sold_per_day=rd.get("soldPerDay", 0.0),
         flip_margin=flip_margin(mb, mv),
         flip_profit=flip_profit(mb, mv),
         vendor_sell=meta.get("vendor_sell", 0),
@@ -46,45 +52,34 @@ async def list_items(
     sort_by: str = Query(default="flip_profit"),
 ):
     try:
-        ah_id = await tsm.tsm_service.get_ah_id(region_id, realm)
+        ah_id = await tsm.tsm_service.get_ah_id(region_id, realm, faction)
         if not ah_id:
-            raise HTTPException(status_code=404, detail="Auction house not found for realm")
+            raise HTTPException(status_code=404, detail="Auction house not found for realm/faction")
         bulk = await tsm.tsm_service.get_ah_bulk(ah_id)
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))
 
+    # Filter — region fields (sale_pct, sold_per_day) are not in bulk AH data;
+    # min_sale_rate and min_daily_sold filters only apply if those were fetched separately.
     results = []
     for raw in bulk:
         mb = raw.get("minBuyout", 0)
         mv = raw.get("marketValue", 0)
-        sr = raw.get("regionSaleRate", 0.0)
-        ds = raw.get("regionAvgDailySold", 0.0)
         if mb == 0 or mv == 0:
             continue
-        margin = flip_margin(mb, mv)
-        if margin < min_margin:
-            continue
-        if sr < min_sale_rate:
-            continue
-        if ds < min_daily_sold:
+        if flip_margin(mb, mv) < min_margin:
             continue
         results.append(raw)
 
     results.sort(key=lambda r: flip_profit(r.get("minBuyout", 0), r.get("marketValue", 0)), reverse=True)
     results = results[:limit]
 
-    enriched = []
-    for raw in results:
-        enriched.append(await _enrich_item(raw, realm, faction))
+    enriched = [await _enrich_item(raw) for raw in results]
 
     if sort_by == "flip_margin":
         enriched.sort(key=lambda x: x.flip_margin, reverse=True)
-    elif sort_by == "region_sale_rate":
-        enriched.sort(key=lambda x: x.region_sale_rate, reverse=True)
-    elif sort_by == "region_avg_daily_sold":
-        enriched.sort(key=lambda x: x.region_avg_daily_sold, reverse=True)
     else:
         enriched.sort(key=lambda x: x.flip_profit, reverse=True)
 
@@ -104,7 +99,7 @@ async def get_item(
     region_id: int = Query(default=1),
 ):
     try:
-        ah_id = await tsm.tsm_service.get_ah_id(region_id, realm)
+        ah_id = await tsm.tsm_service.get_ah_id(region_id, realm, faction)
         if not ah_id:
             raise HTTPException(status_code=404, detail="Auction house not found")
         raw = await tsm.tsm_service.get_item_price(ah_id, item_id)
@@ -116,7 +111,14 @@ async def get_item(
     if not raw:
         raise HTTPException(status_code=404, detail="Item not found on AH")
 
-    base = await _enrich_item(raw, realm, faction)
+    # Fetch region-level data for the detail view (salePct, soldPerDay, avgSalePrice)
+    region_data = None
+    try:
+        region_data = await tsm.tsm_service.get_region_item(region_id, item_id)
+    except Exception:
+        pass
+
+    base = await _enrich_item(raw, region_data=region_data)
 
     history_raw = await nexushub_service.nexushub_service.get_history(realm, faction, item_id)
     history = [

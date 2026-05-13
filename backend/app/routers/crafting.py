@@ -132,7 +132,7 @@ async def _collect_item_ids(item_id: int, recipes: dict[int, Recipe], visited: s
 async def optimize_crafting(req: OptimizeRequest):
     async for db in get_db():
         try:
-            ah_id = await tsm_service.get_ah_id(1, req.realm)
+            ah_id = await tsm_service.get_ah_id(1, req.realm, req.faction)
             if not ah_id:
                 raise HTTPException(status_code=404, detail="Auction house not found")
             ah_data = await tsm_service.get_ah_bulk_as_map(ah_id)

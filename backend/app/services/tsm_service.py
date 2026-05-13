@@ -6,7 +6,14 @@ import httpx
 from app.config import settings
 from app.utils.cache import cache_get, cache_set
 
-AH_BULK_TTL = 3600
+# Rate limits per the TSM docs (per 24 hours):
+#   /ah/{id}                   → 100/day
+#   /ah/{id}/item/{itemId}     → 500/day
+#   /region/{id}/item/{itemId} → 500/day
+#   /region/{id}               → 10/day
+# Cache aggressively to stay well inside these limits.
+AH_BULK_TTL = 3600       # 1 hour — at most 24 bulk fetches/day (well under 100/day limit)
+REGION_ALL_TTL = 86400   # 24 hours — region-all is 10/day, only fetch once per day
 REALM_TTL = 86400
 
 
@@ -23,13 +30,12 @@ class TSMService:
     async def _refresh_token(self) -> None:
         resp = await self._client.post(
             settings.tsm_auth_url,
-            data={
-                "grant_type": "client_credentials",
-                "client_id": "TSM_API_CLIENT",
-                "scope": "app:pricing-api",
+            json={
+                "client_id": "c260f00d-1071-409a-992f-dda2e5498536",
+                "grant_type": "api_token",
+                "scope": "app:realm-api app:pricing-api",
                 "token": settings.tsm_api_key,
             },
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         resp.raise_for_status()
         data = resp.json()
@@ -68,25 +74,44 @@ class TSMService:
         cached = await cache_get(key)
         if cached:
             return cached
-        data = await self._get(
-            f"{settings.tsm_realm_api_url}/realms", params={"regionId": region_id}
-        )
+        # Correct URL per TSM docs: /regions/{regionId}/realms
+        data = await self._get(f"{settings.tsm_realm_api_url}/regions/{region_id}/realms")
         await cache_set(key, data, REALM_TTL)
         return data
 
-    async def get_ah_id(self, region_id: int, realm_name: str) -> int | None:
-        key = f"tsm:ahid:{region_id}:{realm_name}"
+    async def get_ah_id(self, region_id: int, realm_name: str, faction: str = "horde") -> int | None:
+        """
+        Looks up auctionHouseId by searching the realms list for a matching realm name,
+        then picking the AH whose type matches the requested faction.
+        For Classic: type is "Alliance", "Horde", or "Neutral".
+        For Retail: type is "All".
+        """
+        key = f"tsm:ahid:{region_id}:{realm_name}:{faction}"
         cached = await cache_get(key)
         if cached is not None:
             return cached
-        data = await self._get(
-            f"{settings.tsm_realm_api_url}/ah",
-            params={"regionId": region_id, "realmName": realm_name},
-        )
-        ah_id = data.get("auctionHouseId") if isinstance(data, dict) else None
-        if ah_id:
-            await cache_set(key, ah_id, REALM_TTL)
-        return ah_id
+
+        realms = await self.get_realms(region_id)
+        name_lower = realm_name.lower()
+        faction_type = faction.capitalize()  # "Horde" or "Alliance"
+
+        for realm in realms:
+            if realm.get("name", "").lower() != name_lower:
+                continue
+            ah_houses = realm.get("auctionHouses", [])
+            # Prefer exact faction match, fall back to "All" (Retail / merged AH)
+            for ah in ah_houses:
+                if ah.get("type", "").lower() == faction.lower():
+                    ah_id = ah["auctionHouseId"]
+                    await cache_set(key, ah_id, REALM_TTL)
+                    return ah_id
+            for ah in ah_houses:
+                if ah.get("type") == "All":
+                    ah_id = ah["auctionHouseId"]
+                    await cache_set(key, ah_id, REALM_TTL)
+                    return ah_id
+
+        return None
 
     async def get_ah_bulk(self, ah_id: int) -> list[dict]:
         key = f"tsm:ah_bulk:{ah_id}"

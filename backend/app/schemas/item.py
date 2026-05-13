@@ -16,16 +16,18 @@ class AHItemPrice(BaseModel):
     name: str
     icon_url: str | None = None
     quality: int = 1
+    # AH-level fields (from /ah/{id} bulk — always available)
     min_buyout: int = 0
     market_value: int = 0
-    historical_value: int = 0
+    historical: int = 0        # TSM field name is "historical", not "historicalValue"
     num_auctions: int = 0
     quantity: int = 0
-    region_min_buyout_avg: int = 0
-    region_market_value_avg: int = 0
-    region_sale_avg: int = 0
-    region_sale_rate: float = 0.0
-    region_avg_daily_sold: float = 0.0
+    # Region-level fields (from /region/{id}/item/{id} — fetched on-demand, 500/day limit)
+    # TSM actual field names: avgSalePrice, salePct (0-100), soldPerDay
+    avg_sale_price: int = 0
+    sale_pct: int = 0          # 0–100 integer percentage
+    sold_per_day: float = 0.0
+    # Computed
     flip_margin: float = 0.0
     flip_profit: int = 0
     vendor_sell: int = 0

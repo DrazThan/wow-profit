@@ -16,8 +16,8 @@ const COLS = [
   { key: 'market_value', label: 'Market Value' },
   { key: 'flip_profit', label: 'Flip Profit' },
   { key: 'flip_margin', label: 'Margin %' },
-  { key: 'region_sale_rate', label: 'Sale Rate' },
-  { key: 'region_avg_daily_sold', label: 'Daily Vol.' },
+  { key: 'sale_pct', label: 'Sale Rate' },
+  { key: 'sold_per_day', label: 'Daily Vol.' },
   { key: 'num_auctions', label: 'Auctions' },
 ]
 
@@ -97,12 +97,12 @@ export default function ItemTable({ items = [], onRowClick }) {
                 </span>
               </td>
               <td className="px-3 py-2">
-                <span className={item.region_sale_rate > 0.5 ? 'text-wow-green' : item.region_sale_rate > 0.2 ? 'text-wow-gold' : 'text-wow-red'}>
-                  {(item.region_sale_rate * 100).toFixed(0)}%
+                <span className={item.sale_pct > 50 ? 'text-wow-green' : item.sale_pct > 20 ? 'text-wow-gold' : item.sale_pct > 0 ? 'text-wow-red' : 'text-wow-gray'}>
+                  {item.sale_pct > 0 ? `${item.sale_pct}%` : '—'}
                 </span>
               </td>
               <td className="px-3 py-2 text-wow-gray">
-                {item.region_avg_daily_sold?.toFixed(1) ?? '—'}
+                {item.sold_per_day > 0 ? item.sold_per_day.toFixed(1) : '—'}
               </td>
               <td className="px-3 py-2 text-wow-gray">{item.num_auctions ?? '—'}</td>
             </tr>

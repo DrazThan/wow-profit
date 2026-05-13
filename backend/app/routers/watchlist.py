@@ -20,7 +20,7 @@ async def get_watchlist(realm: str = "faerlina", faction: str = "horde", region_
         entries = result.scalars().all()
 
         try:
-            ah_id = await tsm_service.get_ah_id(region_id, realm)
+            ah_id = await tsm_service.get_ah_id(region_id, realm, faction)
             ah_map = await tsm_service.get_ah_bulk_as_map(ah_id) if ah_id else {}
         except Exception:
             ah_map = {}
