@@ -30,6 +30,7 @@ export default {
         },
       },
       fontFamily: {
+        cinzel: ['"Cinzel"', 'serif'],
         wow: ['"LifeCraft"', '"Cinzel"', 'serif'],
       },
     },
