@@ -28,6 +28,11 @@ class TSMService:
         await self._client.aclose()
 
     async def _refresh_token(self) -> None:
+        if not settings.tsm_api_key or settings.tsm_api_key == "your_tsm_api_key_here":
+            raise RuntimeError(
+                "TSM_API_KEY is not configured. Get your key at "
+                "https://id.tradeskillmaster.com/realms/app/account"
+            )
         resp = await self._client.post(
             settings.tsm_auth_url,
             json={
@@ -37,16 +42,23 @@ class TSMService:
                 "token": settings.tsm_api_key,
             },
         )
+        if resp.status_code == 401:
+            raise RuntimeError("TSM authentication failed — check your TSM_API_KEY")
         resp.raise_for_status()
         data = resp.json()
         self._token = data["access_token"]
-        self._token_expires_at = time.time() + data.get("expires_in", 3600) - 60
+        # expires_in from TSM is 86400 (24h). Buffer 5 minutes to refresh proactively.
+        self._token_expires_at = time.time() + data.get("expires_in", 86400) - 300
 
     async def _get_token(self) -> str:
         async with self._lock:
             if not self._token or time.time() >= self._token_expires_at:
                 await self._refresh_token()
             return self._token  # type: ignore[return-value]
+
+    def _invalidate_token(self) -> None:
+        self._token = None
+        self._token_expires_at = 0.0
 
     async def _get(self, url: str, params: dict | None = None) -> dict | list:
         token = await self._get_token()
@@ -55,6 +67,16 @@ class TSMService:
             params=params,
             headers={"Authorization": f"Bearer {token}"},
         )
+        if resp.status_code == 401:
+            # Token was revoked — clear it and retry once with a fresh one
+            async with self._lock:
+                self._invalidate_token()
+            token = await self._get_token()
+            resp = await self._client.get(
+                url,
+                params=params,
+                headers={"Authorization": f"Bearer {token}"},
+            )
         if resp.status_code == 429:
             retry_after = int(resp.headers.get("Retry-After", 60))
             raise RuntimeError(f"TSM rate limit hit, retry after {retry_after}s")
