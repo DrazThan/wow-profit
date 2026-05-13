@@ -14,9 +14,27 @@ client.interceptors.response.use(
 )
 
 export const api = {
+  // Upload
+  uploadAuctionator: (file) => {
+    const form = new FormData()
+    form.append('file', file)
+    return client.post('/upload/auctionator', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
+  uploadTsmAppdata: (file) => {
+    const form = new FormData()
+    form.append('file', file)
+    return client.post('/upload/tsm-appdata', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
+  getUploadStatus: (params) => client.get('/upload/status', { params }),
+  getUploadHistory: (params) => client.get('/upload/history', { params }),
+  getUploadedRealms: () => client.get('/upload/realms'),
+
   // Realms
-  getRegions: () => client.get('/realms/regions'),
-  getRealms: (regionId) => client.get('/realms', { params: { region_id: regionId } }),
+  getRealms: () => client.get('/realms'),
 
   // Items
   getItems: (params) => client.get('/items', { params }),

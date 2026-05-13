@@ -6,8 +6,7 @@ from app.database import get_db
 from app.models.recipe import Recipe
 from app.schemas.crafting import CraftingRow, CraftingTreeNode, OptimizeRequest
 from app.services import item_db_service
-from app.services.nexushub_service import nexushub_service
-from app.services.tsm_service import tsm_service
+from app.services.pricing_service import get_ah_prices_map
 
 router = APIRouter(prefix="/api/crafting", tags=["crafting"])
 
@@ -132,17 +131,11 @@ async def _collect_item_ids(item_id: int, recipes: dict[int, Recipe], visited: s
 async def optimize_crafting(req: OptimizeRequest):
     async for db in get_db():
         try:
-            ah_id = await tsm_service.get_ah_id(1, req.realm, req.faction)
-            if not ah_id:
-                raise HTTPException(status_code=404, detail="Auction house not found")
-            ah_data = await tsm_service.get_ah_bulk_as_map(ah_id)
-        except HTTPException:
-            raise
+            ah_prices = await get_ah_prices_map(req.realm, req.faction, db)
         except Exception as e:
-            raise HTTPException(status_code=502, detail=f"TSM error: {e}")
+            raise HTTPException(status_code=502, detail=f"Pricing error: {e}")
 
         recipes = await _load_recipes(db)
-        ah_prices = {iid: d.get("minBuyout", 0) for iid, d in ah_data.items()}
 
         all_ids = await _collect_item_ids(req.item_id, recipes, set())
 
@@ -154,7 +147,7 @@ async def optimize_crafting(req: OptimizeRequest):
                 item_names[iid] = meta.get("name", f"Item #{iid}")
                 item_icons[iid] = meta.get("icon_url")
 
-        tree = _resolve_tree(
+        return _resolve_tree(
             req.item_id,
             req.quantity,
             ah_prices,
@@ -164,7 +157,6 @@ async def optimize_crafting(req: OptimizeRequest):
             item_icons,
             set(),
         )
-        return tree
 
 
 @router.get("", response_model=list[CraftingRow])
@@ -182,36 +174,43 @@ async def list_crafting(
         result = await db.execute(stmt)
         recipes = result.scalars().all()
 
+        ah_prices = await get_ah_prices_map(realm, faction, db)
+
         rows = []
         for recipe in recipes:
-            try:
-                craft_data = await nexushub_service.get_crafting(realm, faction, recipe.output_item_id)
-                if not craft_data:
-                    continue
-                cost = craft_data.get("craftingCost", 0)
-                profit = craft_data.get("profit", 0)
-                mv = craft_data.get("marketValue", 0)
-                roi = (profit / cost * 100) if cost > 0 else 0.0
-
-                if roi < min_roi:
-                    continue
-
-                meta = await item_db_service.get_item(recipe.output_item_id)
-                rows.append(
-                    CraftingRow(
-                        item_id=recipe.output_item_id,
-                        name=meta.get("name", f"Item #{recipe.output_item_id}") if meta else f"Item #{recipe.output_item_id}",
-                        icon_url=meta.get("icon_url") if meta else None,
-                        profession=recipe.profession,
-                        crafting_cost=cost,
-                        market_value=mv,
-                        profit=profit,
-                        roi=roi,
-                        mats=craft_data.get("mats", []),
-                    )
-                )
-            except Exception:
+            output_price = ah_prices.get(recipe.output_item_id, 0)
+            if output_price == 0:
                 continue
+
+            mat_cost = sum(
+                ah_prices.get(mat.mat_item_id, 0) * mat.qty
+                for mat in recipe.mats
+            )
+            if mat_cost == 0:
+                continue
+
+            output_qty = max(recipe.output_qty, 1)
+            craft_cost = mat_cost // output_qty
+            profit = int(output_price * 0.95) - craft_cost
+            roi = (profit / craft_cost * 100) if craft_cost > 0 else 0.0
+
+            if roi < min_roi:
+                continue
+
+            meta = await item_db_service.get_item(recipe.output_item_id)
+            rows.append(
+                CraftingRow(
+                    item_id=recipe.output_item_id,
+                    name=meta.get("name", f"Item #{recipe.output_item_id}") if meta else f"Item #{recipe.output_item_id}",
+                    icon_url=meta.get("icon_url") if meta else None,
+                    profession=recipe.profession,
+                    crafting_cost=craft_cost,
+                    market_value=output_price,
+                    profit=profit,
+                    roi=roi,
+                    mats=[{"itemId": m.mat_item_id, "qty": m.qty} for m in recipe.mats],
+                )
+            )
 
         rows.sort(key=lambda r: r.roi, reverse=True)
         return rows[:limit]

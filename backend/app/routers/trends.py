@@ -1,9 +1,10 @@
+from datetime import datetime, timedelta, timezone
+
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import select
 
 from app.database import get_db
 from app.models.price_snapshot import PriceSnapshot
-from app.services.nexushub_service import nexushub_service
 
 router = APIRouter(prefix="/api/trends", tags=["trends"])
 
@@ -16,14 +17,13 @@ async def get_trends(
     days: int = Query(default=14, ge=1, le=90),
 ):
     async for db in get_db():
-        from datetime import datetime, timedelta, timezone
         cutoff = datetime.now(timezone.utc) - timedelta(days=days)
         stmt = (
             select(PriceSnapshot)
             .where(
                 PriceSnapshot.item_id == item_id,
-                PriceSnapshot.realm == realm,
-                PriceSnapshot.faction == faction,
+                PriceSnapshot.realm == realm.lower(),
+                PriceSnapshot.faction == faction.lower(),
                 PriceSnapshot.recorded_at >= cutoff,
             )
             .order_by(PriceSnapshot.recorded_at)
@@ -31,26 +31,16 @@ async def get_trends(
         result = await db.execute(stmt)
         snapshots = result.scalars().all()
 
-        if snapshots:
-            return [
-                {
-                    "timestamp": s.recorded_at.isoformat(),
-                    "min_buyout": s.min_buyout,
-                    "market_value": s.market_value,
-                    "num_auctions": s.num_auctions,
-                    "quantity": s.quantity,
-                }
-                for s in snapshots
-            ]
+        if not snapshots:
+            return []
 
-    history = await nexushub_service.get_history(realm, faction, item_id)
-    return [
-        {
-            "timestamp": h.get("scannedAt", ""),
-            "min_buyout": h.get("minBuyout", 0),
-            "market_value": h.get("marketValue", 0),
-            "num_auctions": h.get("numAuctions", 0),
-            "quantity": h.get("quantity", 0),
-        }
-        for h in history
-    ]
+        return [
+            {
+                "timestamp": s.recorded_at.isoformat(),
+                "min_buyout": s.min_buyout or 0,
+                "market_value": s.min_buyout or 0,
+                "num_auctions": s.num_auctions or 0,
+                "quantity": s.quantity or 0,
+            }
+            for s in snapshots
+        ]

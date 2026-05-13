@@ -89,13 +89,13 @@ function ItemDetailPanel({ item, realm, faction, onClose }) {
 const DEFAULT_FILTERS = { min_margin: 0, sort_by: 'flip_profit', limit: 100 }
 
 export default function Items() {
-  const { realm, faction, regionId } = useRealm()
+  const { realm, faction } = useRealm()
   const [filters, setFilters] = useState(DEFAULT_FILTERS)
   const [selected, setSelected] = useState(null)
 
   const fetchItems = useCallback(
-    () => api.getItems({ ...filters, realm, faction, region_id: regionId }).then(r => r.data),
-    [realm, faction, regionId, filters]
+    () => api.getItems({ ...filters, realm, faction }).then(r => r.data),
+    [realm, faction, filters]
   )
   const { data: items, loading, error, refetch } = useAHData(fetchItems, [realm, faction, filters])
 

@@ -1,12 +1,14 @@
 import { useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
+import DataFreshnessPill from '../components/DataFreshnessPill'
 import DealScanner from '../components/DealScanner'
 import GoldDisplay from '../components/GoldDisplay'
 import ItemTable from '../components/ItemTable'
 import LoadingSpinner, { ErrorState } from '../components/LoadingSpinner'
 import RealmSelector from '../components/RealmSelector'
 import { useAHData } from '../hooks/useAHData'
+import { useDataFreshness } from '../hooks/useDataFreshness'
 import { useRealm } from '../hooks/useRealm'
 
 function StatCard({ label, value, sub }) {
@@ -20,12 +22,13 @@ function StatCard({ label, value, sub }) {
 }
 
 export default function Dashboard() {
-  const { realm, faction, regionId } = useRealm()
+  const { realm, faction } = useRealm()
   const navigate = useNavigate()
+  const { freshness } = useDataFreshness(realm, faction)
 
   const fetchItems = useCallback(
-    () => api.getItems({ realm, faction, region_id: regionId, limit: 10, min_sale_rate: 0.1 }).then(r => r.data),
-    [realm, faction, regionId]
+    () => api.getItems({ realm, faction, limit: 10 }).then(r => r.data),
+    [realm, faction]
   )
   const fetchDeals = useCallback(
     () => api.getDeals({ realm, faction, limit: 10 }).then(r => r.data),
@@ -40,9 +43,31 @@ export default function Dashboard() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
-        <h1 className="text-wow-gold text-2xl font-cinzel">Dashboard</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-wow-gold text-2xl font-cinzel">Dashboard</h1>
+          {freshness && (
+            <DataFreshnessPill
+              state={freshness.state}
+              ageHours={freshness.age_hours}
+              onClick={() => navigate('/upload')}
+            />
+          )}
+        </div>
         <RealmSelector />
       </div>
+
+      {freshness?.state === 'no_data' && (
+        <div className="panel border-wow-gold/30 bg-wow-gold/5 text-sm">
+          <p className="text-wow-gold font-medium">No scan data yet</p>
+          <p className="text-wow-gray mt-1">
+            Run a full scan with Auctionator in-game, then{' '}
+            <button onClick={() => navigate('/upload')} className="text-wow-gold underline">
+              upload your Auctionator.lua
+            </button>{' '}
+            to see prices.
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
@@ -53,7 +78,7 @@ export default function Dashboard() {
         <StatCard
           label="Items tracked"
           value={items?.length ?? '—'}
-          sub="above sale rate threshold"
+          sub="in latest scan"
         />
         {topItem && (
           <StatCard
@@ -74,7 +99,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <div className="panel">
           <h2 className="panel-header">Top 10 Flip Opportunities</h2>
-          {itemsLoading && <LoadingSpinner message="Fetching AH data..." />}
+          {itemsLoading && <LoadingSpinner message="Loading prices..." />}
           {itemsError && <ErrorState message={itemsError} onRetry={refetchItems} />}
           {items && !itemsLoading && (
             <ItemTable items={items} onRowClick={(item) => navigate(`/items?highlight=${item.item_id}`)} />

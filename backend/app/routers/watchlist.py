@@ -5,32 +5,26 @@ from app.database import get_db
 from app.models.watchlist import Watchlist
 from app.schemas.item import WatchlistCreate, WatchlistEntry
 from app.services import item_db_service
-from app.services.tsm_service import tsm_service
+from app.services.pricing_service import get_item_price
 from app.utils.gold import flip_profit
 
 router = APIRouter(prefix="/api/watchlist", tags=["watchlist"])
 
 
 @router.get("")
-async def get_watchlist(realm: str = "faerlina", faction: str = "horde", region_id: int = 1):
+async def get_watchlist(realm: str = "faerlina", faction: str = "horde"):
     async for db in get_db():
         result = await db.execute(
             select(Watchlist).where(Watchlist.realm == realm, Watchlist.faction == faction)
         )
         entries = result.scalars().all()
 
-        try:
-            ah_id = await tsm_service.get_ah_id(region_id, realm, faction)
-            ah_map = await tsm_service.get_ah_bulk_as_map(ah_id) if ah_id else {}
-        except Exception:
-            ah_map = {}
-
         results = []
         for entry in entries:
-            raw = ah_map.get(entry.item_id, {})
+            price_row = await get_item_price(entry.item_id, realm, faction, db)
             meta = await item_db_service.get_item(entry.item_id) or {}
-            mb = raw.get("minBuyout", 0)
-            mv = raw.get("marketValue", 0)
+            mb = price_row["min_buyout"] if price_row else 0
+            mv = price_row["market_value"] if price_row else 0
             alert = None
             if entry.alert_below and mb > 0 and mb <= entry.alert_below:
                 alert = "below"

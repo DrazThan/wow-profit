@@ -9,7 +9,7 @@ import { useItemSearch } from '../hooks/useItemSearch'
 import { useRealm } from '../hooks/useRealm'
 
 export default function WatchlistPage() {
-  const { realm, faction, regionId } = useRealm()
+  const { realm, faction } = useRealm()
   const [showSearch, setShowSearch] = useState(false)
   const [alertBelow, setAlertBelow] = useState('')
   const [alertAbove, setAlertAbove] = useState('')
@@ -17,8 +17,8 @@ export default function WatchlistPage() {
   const { query, setQuery, results } = useItemSearch()
 
   const fetchWatchlist = useCallback(
-    () => api.getWatchlist({ realm, faction, region_id: regionId }).then(r => r.data),
-    [realm, faction, regionId]
+    () => api.getWatchlist({ realm, faction }).then(r => r.data),
+    [realm, faction]
   )
   const { data: items, loading, error, refetch } = useAHData(fetchWatchlist, [realm, faction])
 

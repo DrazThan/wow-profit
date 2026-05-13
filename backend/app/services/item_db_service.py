@@ -9,6 +9,7 @@ from app.utils.cache import cache_get, cache_set
 
 _items: dict[int, dict] = {}
 _name_index: dict[str, list[int]] = {}
+_name_to_id: dict[str, int] = {}  # lowercase name → item_id for Auctionator lookup
 
 
 def _load_static_items() -> None:
@@ -20,10 +21,14 @@ def _load_static_items() -> None:
     for item in data:
         iid = item.get("itemId") or item.get("id")
         if iid:
-            _items[int(iid)] = item
+            iid = int(iid)
+            _items[iid] = item
             name_lower = item.get("name", "").lower()
             for word in name_lower.split():
-                _name_index.setdefault(word, []).append(int(iid))
+                _name_index.setdefault(word, []).append(iid)
+            # Prefer higher itemId on name collision (TBC items added later)
+            if name_lower not in _name_to_id or iid > _name_to_id[name_lower]:
+                _name_to_id[name_lower] = iid
 
 
 async def get_item(item_id: int) -> dict | None:
@@ -80,6 +85,17 @@ async def search_items(query: str, limit: int = 20) -> list[dict]:
 
 def get_all_items() -> list[dict]:
     return list(_items.values())
+
+
+def resolve_item_id(name: str) -> int | None:
+    """Look up itemId by item name (case-insensitive). Used for Auctionator name→id mapping."""
+    name_lower = name.lower()
+    if name_lower in _name_to_id:
+        return _name_to_id[name_lower]
+    # Fallback: strip non-alphanumeric and retry (handles color codes / minor variations)
+    import re
+    normalized = re.sub(r"[^a-z0-9 ']", "", name_lower).strip()
+    return _name_to_id.get(normalized)
 
 
 def init() -> None:

@@ -1,4 +1,3 @@
-import asyncio
 import json
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -9,15 +8,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import AsyncSessionLocal, create_tables
 from app.models.recipe import Recipe, RecipeMat
-from app.routers import crafting, deals, items, realms, trends, watchlist
+from app.models.upload_log import UploadLog  # noqa: F401 — ensure table is created
+from app.routers import crafting, deals, items, realms, trends, upload, watchlist
 from app.services import item_db_service
-from app.services.tsm_service import tsm_service
-from app.services.nexushub_service import nexushub_service
 from app.utils.cache import init_redis
 
 
 async def _seed_recipes(session) -> None:
-    from sqlalchemy import select, func as sqlfunc
+    from sqlalchemy import func as sqlfunc, select
+
     count_result = await session.execute(select(sqlfunc.count()).select_from(Recipe))
     count = count_result.scalar()
     if count and count > 0:
@@ -53,35 +52,6 @@ async def _seed_recipes(session) -> None:
     await session.commit()
 
 
-async def _snapshot_job() -> None:
-    while True:
-        await asyncio.sleep(3600)
-        try:
-            from app.database import AsyncSessionLocal
-            from app.models.price_snapshot import PriceSnapshot
-            ah_id = await tsm_service.get_ah_id(1, settings.default_realm)
-            if not ah_id:
-                continue
-            bulk = await tsm_service.get_ah_bulk(ah_id)
-            async with AsyncSessionLocal() as db:
-                for item in bulk[:500]:
-                    iid = item.get("itemId")
-                    if not iid:
-                        continue
-                    db.add(PriceSnapshot(
-                        item_id=iid,
-                        realm=settings.default_realm,
-                        faction=settings.default_faction,
-                        min_buyout=item.get("minBuyout"),
-                        market_value=item.get("marketValue"),
-                        num_auctions=item.get("numAuctions"),
-                        quantity=item.get("quantity"),
-                    ))
-                await db.commit()
-        except Exception:
-            pass
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     if settings.redis_url:
@@ -94,18 +64,13 @@ async def lifespan(app: FastAPI):
     async with AsyncSessionLocal() as db:
         await _seed_recipes(db)
 
-    asyncio.create_task(_snapshot_job())
-
     yield
-
-    await tsm_service.close()
-    await nexushub_service.close()
 
 
 app = FastAPI(
     title="WoW Profit Tracker",
-    description="TBC Classic Auction House profit tracker",
-    version="1.0.0",
+    description="TBC Classic Auction House profit tracker — Auctionator.lua upload model",
+    version="2.0.0",
     lifespan=lifespan,
 )
 
@@ -117,6 +82,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(upload.router)
 app.include_router(realms.router)
 app.include_router(items.router)
 app.include_router(deals.router)

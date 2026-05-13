@@ -1,14 +1,16 @@
-import { BrowserRouter, Link, NavLink, Route, Routes, useLocation } from 'react-router-dom'
-import { BarChart2, BookOpen, Eye, Home, Sword, TrendingUp } from 'lucide-react'
+import { BrowserRouter, NavLink, Route, Routes } from 'react-router-dom'
+import { BarChart2, BookOpen, Eye, Home, Sword, TrendingUp, Upload } from 'lucide-react'
 import Dashboard from './pages/Dashboard'
 import Items from './pages/Items'
 import Crafting from './pages/Crafting'
 import Trends from './pages/Trends'
+import UploadPage from './pages/Upload'
 import WatchlistPage from './pages/WatchlistPage'
 import { RealmProvider } from './hooks/useRealm'
 
 const NAV = [
   { to: '/', icon: Home, label: 'Dashboard' },
+  { to: '/upload', icon: Upload, label: 'Upload Scan' },
   { to: '/items', icon: BarChart2, label: 'Items' },
   { to: '/crafting', icon: Sword, label: 'Crafting' },
   { to: '/trends', icon: TrendingUp, label: 'Trends' },
@@ -44,7 +46,7 @@ function Sidebar() {
         ))}
       </nav>
       <div className="p-3 border-t border-wow-border text-xs text-wow-gray">
-        <p>Data: TSM + NexusHub</p>
+        <p>Data: Auctionator scan</p>
         <p className="mt-0.5 text-wow-border">TBC Anniversary</p>
       </div>
     </aside>
@@ -60,6 +62,7 @@ export default function App() {
           <main className="flex-1 overflow-auto">
             <Routes>
               <Route path="/" element={<Dashboard />} />
+              <Route path="/upload" element={<UploadPage />} />
               <Route path="/items" element={<Items />} />
               <Route path="/crafting" element={<Crafting />} />
               <Route path="/trends" element={<Trends />} />

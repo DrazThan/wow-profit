@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { api } from '../api/client'
 import { useRealm } from '../hooks/useRealm'
 
 const POPULAR_REALMS = [
@@ -9,6 +10,21 @@ const POPULAR_REALMS = [
 export default function RealmSelector() {
   const { realm, faction, update } = useRealm()
   const [editRealm, setEditRealm] = useState(realm)
+  const [uploadedRealms, setUploadedRealms] = useState([])
+
+  useEffect(() => {
+    api.getUploadedRealms()
+      .then(r => setUploadedRealms(r.data || []))
+      .catch(() => {})
+  }, [])
+
+  // Merge uploaded realms with popular list, deduping
+  const realmOptions = [
+    ...new Set([
+      ...uploadedRealms.map(r => r.realm),
+      ...POPULAR_REALMS,
+    ]),
+  ]
 
   const handleApply = () => {
     if (editRealm.trim()) update(editRealm.trim().toLowerCase(), faction)
@@ -21,7 +37,7 @@ export default function RealmSelector() {
         onChange={(e) => setEditRealm(e.target.value)}
         className="input w-40"
       >
-        {POPULAR_REALMS.map((r) => (
+        {realmOptions.map((r) => (
           <option key={r} value={r}>{r}</option>
         ))}
       </select>
