@@ -15,12 +15,13 @@ async def get_latest_prices(realm: str, faction: str, db: AsyncSession) -> list[
     sql = text("""
         WITH latest_snap AS (
             SELECT DISTINCT ON (item_id)
-                item_id, min_buyout, recorded_at
+                item_id, min_buyout, market_value AS snap_market_value,
+                quantity, recorded_at
             FROM price_snapshots
             WHERE realm = :realm AND faction = :faction AND min_buyout > 0
             ORDER BY item_id, recorded_at DESC
         ),
-        market_vals AS (
+        rolling_mv AS (
             SELECT item_id, CAST(AVG(daily_min) AS BIGINT) AS market_value
             FROM (
                 SELECT item_id,
@@ -36,10 +37,11 @@ async def get_latest_prices(realm: str, faction: str, db: AsyncSession) -> list[
         )
         SELECT l.item_id,
                l.min_buyout,
+               l.quantity,
                l.recorded_at,
-               COALESCE(m.market_value, l.min_buyout) AS market_value
+               COALESCE(l.snap_market_value, r.market_value, l.min_buyout) AS market_value
         FROM latest_snap l
-        LEFT JOIN market_vals m ON l.item_id = m.item_id
+        LEFT JOIN rolling_mv r ON l.item_id = r.item_id
     """)
 
     result = await db.execute(sql, {"realm": realm.lower(), "faction": faction.lower()})
@@ -54,14 +56,15 @@ async def get_item_price(item_id: int, realm: str, faction: str, db: AsyncSessio
     """
     sql = text("""
         WITH latest_snap AS (
-            SELECT item_id, min_buyout, recorded_at
+            SELECT item_id, min_buyout, market_value AS snap_market_value,
+                   quantity, recorded_at
             FROM price_snapshots
             WHERE item_id = :item_id AND realm = :realm AND faction = :faction
               AND min_buyout > 0
             ORDER BY recorded_at DESC
             LIMIT 1
         ),
-        market_val AS (
+        rolling_mv AS (
             SELECT CAST(AVG(daily_min) AS BIGINT) AS market_value
             FROM (
                 SELECT DATE(recorded_at) AS day, MIN(min_buyout) AS daily_min
@@ -74,9 +77,10 @@ async def get_item_price(item_id: int, realm: str, faction: str, db: AsyncSessio
         )
         SELECT l.item_id,
                l.min_buyout,
+               l.quantity,
                l.recorded_at,
-               COALESCE(m.market_value, l.min_buyout) AS market_value
-        FROM latest_snap l, market_val m
+               COALESCE(l.snap_market_value, r.market_value, l.min_buyout) AS market_value
+        FROM latest_snap l, rolling_mv r
     """)
 
     result = await db.execute(

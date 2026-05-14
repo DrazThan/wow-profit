@@ -228,8 +228,18 @@ def _item_id_from_key(key: str) -> int | None:
 # Public API
 # ---------------------------------------------------------------------------
 
-ParsedRealm = dict[int, tuple[int, int]]   # item_id → (min_buyout_copper, scan_ts)
-ParsedDB = dict[str, dict[str, ParsedRealm]]  # "realm" → {"faction": ParsedRealm}
+ItemPriceData = dict  # {min_buyout, market_value, quantity}
+ParsedRealm = dict[int, ItemPriceData]          # item_id → ItemPriceData
+ParsedDB = dict[str, dict[str, ParsedRealm]]    # "realm" → {"faction": ParsedRealm}
+
+
+def _median(values: list[int | float]) -> int | None:
+    if not values:
+        return None
+    s = sorted(values)
+    n = len(s)
+    mid = n // 2
+    return int(s[mid] if n % 2 else (s[mid - 1] + s[mid]) / 2)
 
 
 def parse_auctionator_lua(content: str | bytes) -> dict[str, dict[str, dict[int, int]]]:
@@ -372,7 +382,7 @@ def _parse_v8(raw: bytes) -> dict[str, dict[str, dict[int, int]]]:
         except Exception:
             continue
 
-        items: dict[int, int] = {}
+        items: dict[int, ItemPriceData] = {}
         for db_key, entry in cbor_data.items():
             if not isinstance(entry, dict):
                 continue
@@ -382,11 +392,35 @@ def _parse_v8(raw: bytes) -> dict[str, dict[str, dict[int, int]]]:
             m_val = entry.get("m")
             if not isinstance(m_val, (int, float)):
                 continue
-            price = int(m_val)
-            if 0 < price < 2_000_000_000:
-                # Keep highest price if item_id seen before (gear suffix collision)
-                if item_id not in items or price > items[item_id]:
-                    items[item_id] = price
+            min_buyout = int(m_val)
+            if not (0 < min_buyout < 2_000_000_000):
+                continue
+
+            # market_value = median of (current min + recent daily highs).
+            # Daily highs (h) are reliably populated by Auctionator; including them
+            # means a single edge-priced listing can't drag the estimate below the
+            # price range that was actually visible on the AH in recent days.
+            h_raw = entry.get("h")
+            daily_highs = [int(v) for v in h_raw.values()
+                           if isinstance(v, (int, float)) and 0 < v < 2_000_000_000
+                           ] if isinstance(h_raw, dict) else []
+            market_value = _median([min_buyout] + daily_highs)
+
+            # Extract daily quantities (a) → avg = liquidity signal
+            a_raw = entry.get("a")
+            daily_qty = [int(v) for v in a_raw.values()
+                         if isinstance(v, (int, float)) and v > 0
+                         ] if isinstance(a_raw, dict) else []
+            quantity = int(sum(daily_qty) / len(daily_qty)) if daily_qty else None
+
+            data: ItemPriceData = {
+                "min_buyout": min_buyout,
+                "market_value": market_value,
+                "quantity": quantity,
+            }
+            # On gear suffix collision keep the entry with the higher market_value
+            if item_id not in items or (market_value or 0) > (items[item_id]["market_value"] or 0):
+                items[item_id] = data
 
         if items:
             result.setdefault(realm, {})[faction] = items

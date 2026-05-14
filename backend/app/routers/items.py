@@ -25,7 +25,7 @@ def _build_item(price_row: dict, meta: dict) -> AHItemPrice:
         min_buyout=mb,
         market_value=mv,
         num_auctions=0,
-        quantity=0,
+        quantity=price_row.get("quantity") or 0,
         flip_margin=flip_margin(mb, mv),
         flip_profit=flip_profit(mb, mv),
         vendor_sell=meta.get("vendor_sell", 0),

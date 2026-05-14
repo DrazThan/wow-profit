@@ -36,8 +36,12 @@ async def ingest_auctionator(
             realm_imported = 0
             realm_skipped = 0
 
-            for item_id, min_buyout in items.items():
-                if not isinstance(item_id, int) or min_buyout <= 0:
+            for item_id, price_data in items.items():
+                if not isinstance(item_id, int):
+                    realm_skipped += 1
+                    continue
+                min_buyout = price_data.get("min_buyout", 0) if isinstance(price_data, dict) else int(price_data)
+                if min_buyout <= 0:
                     realm_skipped += 1
                     continue
                 db.add(PriceSnapshot(
@@ -45,6 +49,8 @@ async def ingest_auctionator(
                     realm=realm,
                     faction=faction,
                     min_buyout=min_buyout,
+                    market_value=price_data.get("market_value") if isinstance(price_data, dict) else None,
+                    quantity=price_data.get("quantity") if isinstance(price_data, dict) else None,
                     recorded_at=snapshot_time,
                 ))
                 realm_imported += 1
