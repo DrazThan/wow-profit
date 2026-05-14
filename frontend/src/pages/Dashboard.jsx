@@ -22,17 +22,17 @@ function StatCard({ label, value, sub }) {
 }
 
 export default function Dashboard() {
-  const { realm, faction } = useRealm()
+  const { realm, faction, ready } = useRealm()
   const navigate = useNavigate()
   const { freshness } = useDataFreshness(realm, faction)
 
   const fetchItems = useCallback(
-    () => api.getItems({ realm, faction, limit: 10 }).then(r => r.data),
-    [realm, faction]
+    () => ready ? api.getItems({ realm, faction, limit: 10 }).then(r => r.data) : Promise.resolve([]),
+    [realm, faction, ready]
   )
   const fetchDeals = useCallback(
-    () => api.getDeals({ realm, faction, limit: 10 }).then(r => r.data),
-    [realm, faction]
+    () => ready ? api.getDeals({ realm, faction, limit: 10 }).then(r => r.data) : Promise.resolve([]),
+    [realm, faction, ready]
   )
 
   const { data: items, loading: itemsLoading, error: itemsError, refetch: refetchItems } = useAHData(fetchItems, [realm, faction])

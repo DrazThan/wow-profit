@@ -4,29 +4,31 @@ import { api } from '../api/client'
 const RealmContext = createContext(null)
 
 export function RealmProvider({ children }) {
-  const [realm, setRealm] = useState(() => localStorage.getItem('realm') || '')
+  const [realm, setRealm] = useState(() => localStorage.getItem('realm') || 'faerlina')
   const [faction, setFaction] = useState(() => localStorage.getItem('faction') || 'horde')
-  const [ready, setReady] = useState(() => !!localStorage.getItem('realm'))
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    if (ready) return
-    // No saved realm — pick the most recently uploaded one
+    // Always fetch uploaded realms on mount. If the saved realm isn't one we
+    // have data for, switch to the most recently uploaded one automatically.
     api.getUploadedRealms()
       .then(r => {
         const realms = r.data || []
-        if (realms.length > 0) {
-          const latest = realms[0]
-          setRealm(latest.realm)
-          setFaction(latest.faction)
-          localStorage.setItem('realm', latest.realm)
-          localStorage.setItem('faction', latest.faction)
-        } else {
-          setRealm('faerlina')
+        const savedRealm = localStorage.getItem('realm')
+        const savedInList = realms.some(r => r.realm === savedRealm)
+        if (!savedRealm || !savedInList) {
+          if (realms.length > 0) {
+            const latest = realms[0]
+            setRealm(latest.realm)
+            setFaction(latest.faction)
+            localStorage.setItem('realm', latest.realm)
+            localStorage.setItem('faction', latest.faction)
+          }
         }
       })
-      .catch(() => setRealm('faerlina'))
+      .catch(() => {})
       .finally(() => setReady(true))
-  }, [ready])
+  }, [])
 
   const update = (newRealm, newFaction) => {
     setRealm(newRealm)
