@@ -7,6 +7,7 @@ from app.database import get_db
 from app.models.price_snapshot import PriceSnapshot
 from app.schemas.item import AHItemPrice, ItemDetail
 from app.services import item_db_service
+from app.services.item_db_service import get_item_local
 from app.services.pricing_service import get_item_price, get_latest_prices
 from app.utils.gold import flip_margin, flip_profit
 
@@ -35,7 +36,7 @@ def _build_item(price_row: dict, meta: dict) -> AHItemPrice:
 async def list_items(
     realm: str = Query(default="faerlina"),
     faction: str = Query(default="horde"),
-    min_margin: float = Query(default=0.0, ge=0.0, le=1.0),
+    min_margin: float | None = Query(default=None, ge=-1.0, le=1.0),
     quality: int | None = Query(default=None),
     limit: int = Query(default=100, le=500),
     sort_by: str = Query(default="flip_profit"),
@@ -53,9 +54,9 @@ async def list_items(
         if mb == 0 or mv == 0:
             continue
         fm = flip_margin(mb, mv)
-        if fm < min_margin:
+        if min_margin is not None and fm < min_margin:
             continue
-        meta = await item_db_service.get_item(row["item_id"]) or {}
+        meta = get_item_local(row["item_id"])
         if quality is not None and meta.get("quality", 1) != quality:
             continue
         results.append(_build_item(row, meta))

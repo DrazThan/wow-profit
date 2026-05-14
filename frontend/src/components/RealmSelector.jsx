@@ -2,15 +2,10 @@ import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import { useRealm } from '../hooks/useRealm'
 
-const POPULAR_REALMS = [
-  'faerlina', 'benediction', 'whitemane', 'grobbulus',
-  'sulfuras', 'earthfury', 'mankrik', 'skyfury',
-]
-
 export default function RealmSelector() {
   const { realm, faction, update } = useRealm()
-  const [editRealm, setEditRealm] = useState(realm)
   const [uploadedRealms, setUploadedRealms] = useState([])
+  const [customRealm, setCustomRealm] = useState('')
 
   useEffect(() => {
     api.getUploadedRealms()
@@ -18,43 +13,59 @@ export default function RealmSelector() {
       .catch(() => {})
   }, [])
 
-  // Merge uploaded realms with popular list, deduping
-  const realmOptions = [
-    ...new Set([
-      ...uploadedRealms.map(r => r.realm),
-      ...POPULAR_REALMS,
-    ]),
-  ]
+  const uploadedRealmNames = uploadedRealms.map(r => r.realm)
+  const hasCustom = realm && !uploadedRealmNames.includes(realm)
 
-  const handleApply = () => {
-    if (editRealm.trim()) update(editRealm.trim().toLowerCase(), faction)
+  const handleRealmChange = (e) => {
+    const val = e.target.value
+    if (val === '__custom__') return
+    update(val, faction)
+    setCustomRealm('')
   }
+
+  const handleCustomApply = () => {
+    const val = customRealm.trim().toLowerCase()
+    if (val) update(val, faction)
+  }
+
+  const handleFaction = (f) => update(realm, f)
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
       <select
-        value={editRealm}
-        onChange={(e) => setEditRealm(e.target.value)}
-        className="input w-40"
+        value={uploadedRealmNames.includes(realm) ? realm : '__custom__'}
+        onChange={handleRealmChange}
+        className="input w-44"
       >
-        {realmOptions.map((r) => (
-          <option key={r} value={r}>{r}</option>
+        {uploadedRealms.length === 0 && (
+          <option value="faerlina">faerlina</option>
+        )}
+        {uploadedRealms.map(r => (
+          <option key={`${r.realm}-${r.faction}`} value={r.realm}>
+            {r.realm} ({r.faction})
+          </option>
         ))}
+        {hasCustom && (
+          <option value="__custom__">{realm} (custom)</option>
+        )}
+        <option value="__custom__">Other realm…</option>
       </select>
 
-      <input
-        className="input w-32"
-        placeholder="Custom realm"
-        value={editRealm}
-        onChange={(e) => setEditRealm(e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && handleApply()}
-      />
+      {(uploadedRealms.length === 0 || hasCustom || !uploadedRealmNames.includes(realm)) && (
+        <input
+          className="input w-32"
+          placeholder="Realm name"
+          value={customRealm}
+          onChange={e => setCustomRealm(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleCustomApply()}
+        />
+      )}
 
       <div className="flex rounded overflow-hidden border border-wow-border">
         {['horde', 'alliance'].map((f) => (
           <button
             key={f}
-            onClick={() => update(realm, f)}
+            onClick={() => handleFaction(f)}
             className={`px-3 py-1.5 text-sm capitalize transition-colors duration-100 ${
               faction === f
                 ? f === 'horde'
@@ -68,9 +79,11 @@ export default function RealmSelector() {
         ))}
       </div>
 
-      <button onClick={handleApply} className="btn-gold">
-        Apply
-      </button>
+      {customRealm && (
+        <button onClick={handleCustomApply} className="btn-gold">
+          Apply
+        </button>
+      )}
     </div>
   )
 }

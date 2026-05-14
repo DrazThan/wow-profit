@@ -4,7 +4,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.price_snapshot import PriceSnapshot
 from app.models.upload_log import UploadLog
-from app.services import item_db_service
 from app.services.lua_parser_service import parse_auctionator_lua, parse_tsm_appdata_lua
 
 
@@ -13,6 +12,7 @@ class IngestResult:
         self.items_imported = 0
         self.items_skipped = 0
         self.realms: list[str] = []
+        self.item_ids: list[int] = []
 
     def to_dict(self) -> dict:
         return {
@@ -23,7 +23,7 @@ class IngestResult:
 
 
 async def ingest_auctionator(
-    content: str,
+    content: str | bytes,
     filename: str,
     db: AsyncSession,
 ) -> IngestResult:
@@ -31,42 +31,38 @@ async def ingest_auctionator(
     result = IngestResult()
     snapshot_time = datetime.now(timezone.utc)
 
-    for realm_faction, items in parsed.items():
-        # Split "Faerlina - Horde" into realm="faerlina", faction="horde"
-        parts = realm_faction.rsplit(" - ", 1)
-        realm = parts[0].strip().lower()
-        faction = parts[1].strip().lower() if len(parts) > 1 else "unknown"
+    for realm, factions in parsed.items():
+        for faction, items in factions.items():
+            realm_imported = 0
+            realm_skipped = 0
 
-        realm_imported = 0
-        realm_skipped = 0
+            for item_id, min_buyout in items.items():
+                if not isinstance(item_id, int) or min_buyout <= 0:
+                    realm_skipped += 1
+                    continue
+                db.add(PriceSnapshot(
+                    item_id=item_id,
+                    realm=realm,
+                    faction=faction,
+                    min_buyout=min_buyout,
+                    recorded_at=snapshot_time,
+                ))
+                realm_imported += 1
+                result.item_ids.append(item_id)
 
-        for item_name, (min_buyout, _scan_ts) in items.items():
-            item_id = item_db_service.resolve_item_id(item_name)
-            if item_id is None:
-                realm_skipped += 1
-                continue
-            db.add(PriceSnapshot(
-                item_id=item_id,
-                realm=realm,
-                faction=faction,
-                min_buyout=min_buyout,
-                recorded_at=snapshot_time,
-            ))
-            realm_imported += 1
+            if realm_imported > 0:
+                db.add(UploadLog(
+                    filename=filename,
+                    upload_source="auctionator",
+                    realm=realm,
+                    faction=faction,
+                    items_imported=realm_imported,
+                    items_skipped=realm_skipped,
+                ))
+                result.realms.append(f"{realm} - {faction}")
 
-        if realm_imported > 0:
-            db.add(UploadLog(
-                filename=filename,
-                upload_source="auctionator",
-                realm=realm,
-                faction=faction,
-                items_imported=realm_imported,
-                items_skipped=realm_skipped,
-            ))
-            result.realms.append(f"{realm} - {faction}")
-
-        result.items_imported += realm_imported
-        result.items_skipped += realm_skipped
+            result.items_imported += realm_imported
+            result.items_skipped += realm_skipped
 
     await db.commit()
     return result

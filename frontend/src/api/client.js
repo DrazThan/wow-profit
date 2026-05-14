@@ -32,6 +32,7 @@ export const api = {
   getUploadStatus: (params) => client.get('/upload/status', { params }),
   getUploadHistory: (params) => client.get('/upload/history', { params }),
   getUploadedRealms: () => client.get('/upload/realms'),
+  getSeedStatus: () => client.get('/upload/seed-status'),
 
   // Realms
   getRealms: () => client.get('/realms'),

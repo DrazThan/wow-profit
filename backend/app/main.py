@@ -59,10 +59,9 @@ async def lifespan(app: FastAPI):
 
     await create_tables()
 
-    item_db_service.init()
-
     async with AsyncSessionLocal() as db:
         await _seed_recipes(db)
+        await item_db_service.load_from_db(db)
 
     yield
 

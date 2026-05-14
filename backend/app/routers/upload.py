@@ -6,6 +6,7 @@ from app.database import get_db
 from app.models.upload_log import UploadLog
 from app.services.ingest_service import ingest_auctionator, ingest_tsm_appdata
 from app.services.pricing_service import get_data_freshness
+from app.services.seeding_service import get_seed_status, trigger_seeding
 
 router = APIRouter(prefix="/api/upload", tags=["upload"])
 
@@ -21,32 +22,35 @@ async def upload_auctionator(file: UploadFile):
             detail=f"File exceeds {settings.max_upload_size_mb} MB limit",
         )
 
-    try:
-        content = raw.decode("utf-8", errors="replace")
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Could not decode file: {e}")
-
-    if "AUCTIONATOR_PRICE_DATABASE" not in content:
+    if b"AUCTIONATOR_PRICE_DATABASE" not in raw:
         raise HTTPException(
             status_code=422,
             detail="File does not appear to be an Auctionator.lua SavedVariables file",
         )
 
     async for db in get_db():
-        result = await ingest_auctionator(content, file.filename or "Auctionator.lua", db)
+        result = await ingest_auctionator(raw, file.filename or "Auctionator.lua", db)
 
     if result.items_imported == 0:
         raise HTTPException(
             status_code=422,
-            detail="No known items found in file. Is the item database seeded?",
+            detail="No price data found in file. Make sure the file contains a completed Auctionator scan.",
         )
+
+    trigger_seeding(result.item_ids)
 
     return {
         "ok": True,
         "items_imported": result.items_imported,
         "items_skipped": result.items_skipped,
         "realms": result.realms,
+        "seeding": get_seed_status(),
     }
+
+
+@router.get("/seed-status")
+async def seed_status():
+    return get_seed_status()
 
 
 @router.post("/tsm-appdata")

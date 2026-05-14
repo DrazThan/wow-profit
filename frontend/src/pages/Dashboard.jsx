@@ -77,7 +77,7 @@ export default function Dashboard() {
         />
         <StatCard
           label="Items tracked"
-          value={items?.length ?? '—'}
+          value={freshness?.items_imported?.toLocaleString() ?? '—'}
           sub="in latest scan"
         />
         {topItem && (
