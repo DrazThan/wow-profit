@@ -1,0 +1,28 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: wow-profit-db
+    environment:
+      POSTGRES_USER: ahtracker
+      POSTGRES_PASSWORD: ahtracker
+      POSTGRES_DB: ah_tracker
+    ports:
+      - "5432:5432"
+    volumes:
+      - wow-profit-pgdata:/var/lib/postgresql/data
+    networks:
+      - wow-profit-shared
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ahtracker -d ah_tracker"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+networks:
+  wow-profit-shared:
+    name: wow-profit-shared
+
+volumes:
+  wow-profit-pgdata:
+    name: wow-profit-pgdata
