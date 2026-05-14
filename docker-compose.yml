@@ -1,26 +1,10 @@
-version: "3.9"
-
 services:
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: ahtracker
-      POSTGRES_PASSWORD: ahtracker
-      POSTGRES_DB: ah_tracker
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ahtracker -d ah_tracker"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
   redis:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    networks:
+      - wow-profit-shared
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -32,15 +16,15 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql+asyncpg://ahtracker:ahtracker@postgres:5432/ah_tracker
+      - DATABASE_URL=postgresql+asyncpg://ahtracker:ahtracker@wow-profit-db:5432/ah_tracker
       - REDIS_URL=redis://redis:6379
     env_file:
       - .env
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
+    networks:
+      - wow-profit-shared
     volumes:
       - ./backend:/app
       - ./data:/data
@@ -50,6 +34,8 @@ services:
     build: ./frontend
     ports:
       - "5173:5173"
+    networks:
+      - wow-profit-shared
     depends_on:
       - backend
     volumes:
@@ -57,5 +43,7 @@ services:
       - /app/node_modules
     command: npm run dev -- --host
 
-volumes:
-  postgres_data:
+networks:
+  wow-profit-shared:
+    external: true
+    name: wow-profit-shared
