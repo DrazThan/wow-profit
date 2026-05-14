@@ -101,9 +101,17 @@ export default function Dashboard() {
           <h2 className="panel-header">Top 10 Flip Opportunities</h2>
           {itemsLoading && <LoadingSpinner message="Loading prices..." />}
           {itemsError && <ErrorState message={itemsError} onRetry={refetchItems} />}
-          {items && !itemsLoading && (
-            <ItemTable items={items} onRowClick={(item) => navigate(`/items?highlight=${item.item_id}`)} />
-          )}
+          {items && !itemsLoading && (() => {
+            const flips = items.filter(i => i.flip_profit > 0)
+            return flips.length > 0
+              ? <ItemTable items={flips} onRowClick={(item) => navigate(`/items?highlight=${item.item_id}`)} />
+              : (
+                <div className="text-center py-8 text-wow-gray text-sm space-y-1">
+                  <p>No flip opportunities yet.</p>
+                  <p className="text-xs">Upload scans over multiple days to build price history.</p>
+                </div>
+              )
+          })()}
         </div>
 
         <div className="panel">

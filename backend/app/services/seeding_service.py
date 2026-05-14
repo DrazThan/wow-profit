@@ -18,7 +18,7 @@ from app.models.item import Item
 from app.services import item_db_service
 
 _WOWHEAD_URL = "https://nether.wowhead.com/tooltip/item/{item_id}"
-_WOWHEAD_PARAMS = {"dataEnv": "4", "locale": "0"}
+_WOWHEAD_PARAMS = {"locale": "0"}
 _CONCURRENCY = 8
 
 _state: dict = {

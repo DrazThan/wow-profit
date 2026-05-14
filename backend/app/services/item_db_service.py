@@ -65,7 +65,7 @@ async def get_item(item_id: int) -> dict | None:
         async with httpx.AsyncClient(timeout=10.0, headers=_HEADERS) as client:
             resp = await client.get(
                 f"https://nether.wowhead.com/tooltip/item/{item_id}",
-                params={"dataEnv": "4", "locale": "0"},
+                params={"locale": "0"},
             )
             if resp.status_code == 200:
                 data = resp.json()
